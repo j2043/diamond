@@ -1,13 +1,16 @@
 # Installs Diamond via Github using the git interface
 #
-#    diamond_install node['hostname'] do  
+#    diamond_install node['hostname'] do
 #     action :git
 #    end
+
+# Hack to set the interpreter correctly if 2.6
+major_version = `python -V 2>&1`[/(\d\.\d)/, 1]
 
 action :git do
   python_pip "diamond" do
     action :remove
-    only_if { ::File.exists?("/usr/local/lib/python2.7/dist-packages/diamond/version.py") }
+    only_if { ::File.exists?("/usr/local/lib/python#{major_version}/dist-packages/diamond/version.py") }
   end
   git Chef::Config[:file_cache_path] + "/" + new_resource.name do
     repository new_resource.git_repository_uri
@@ -21,7 +24,7 @@ action :git do
   end
   python_virtualenv new_resource.prefix do
     action :create
-    interpreter "python2.7"
+    interpreter "python#{major_version}"
   end
   new_resource.required_python_packages.collect do |pkg, ver|
     python_pip pkg do
@@ -46,7 +49,7 @@ action :git do
     not_if { ::File.exists?("/opt/diamond/bin/diamond") }
     creates new_resource.prefix + "/bin/diamond"
   end
-  
+
   ["/var/log/diamond/",new_resource.prefix + "/share/diamond",new_resource.prefix + "/share/diamond/collectors"].each do |dp|
     directory dp do
       action :create
@@ -58,14 +61,14 @@ end
 
 # Installs Diamond via Github using a tarball
 #
-#    diamond_install node['hostname'] do  
+#    diamond_install node['hostname'] do
 #     action :tarball
 #    end
 
 action :tarball do
   python_pip "diamond" do
     action :remove
-    only_if { ::File.exists?("/usr/local/lib/python2.7/dist-packages/diamond/version.py") }
+    only_if { ::File.exists?("/usr/local/lib/python#{major_version}/dist-packages/diamond/version.py") }
   end
   directory new_resource.prefix do
     action :create
@@ -73,7 +76,7 @@ action :tarball do
   end
   python_virtualenv new_resource.prefix do
     action :create
-    interpreter "python2.7"
+    interpreter "python#{major_version}"
   end
   remote_file Chef::Config[:file_cache_path] + "/diamond.tar.gz" do
     source new_resource.tarball_path
